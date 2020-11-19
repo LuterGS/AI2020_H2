@@ -7,18 +7,10 @@
 import os
 from tqdm import tqdm
 import numpy as np
-
-import tensorflow.keras.layers as layers
-import tensorflow.keras.optimizers as optimizers
-import tensorflow.keras.losses as losses
-import tensorflow.keras.metrics as metrics
-import tensorflow.keras.utils as utils
-from tensorflow.keras import Model
-from tf2crf import CRF, ModelWithCRFLoss
+import LuterGS.model as models
 from seqeval.metrics import classification_report
-
-
 from LuterGS.Preprocess import load_vocab, convert_data2feature, convert_data2tagfeature
+
 
 PATH = os.path.dirname(os.path.abspath(__file__)) + "/"
 MAX_LENGTH = 150
@@ -56,44 +48,26 @@ class Dataset:
 
 class Network:
 
-    def __init__(self):
-        self.model = self.init_model()
+    def __init__(self, model_selection):
+        self.model = self.init_model(model_selection)
 
-    def init_model(self):
-        feature_input = layers.Input(shape=(MAX_LENGTH, ), dtype='int32')
-        f_x = layers.Embedding(input_dim=2160, output_dim=EMBEDDING_DIM, input_shape=(MAX_LENGTH, ), trainable=True, mask_zero=True)(feature_input)
-        f_x = layers.Bidirectional(layers.GRU(100, return_sequences=True))(f_x)
+    def init_model(self, model_selection):
+        """
+        :param model_selection: 모델 선택 번호
+            1. biGRU + Resnet + Okt 모델
+        :return: 완성된 텐서플로우 모델
+        """
+        if model_selection == 1:
+            return models.biGRU_ResNet_Okt(MAX_LENGTH, EMBEDDING_DIM, TAG_NUM)
+        elif model_selection == 2:
+            return models.network2(MAX_LENGTH, EMBEDDING_DIM, TAG_NUM)
 
-        f2_x = layers.Bidirectional(layers.GRU(units=100, return_sequences=True))(f_x)
-
-        f_x = layers.Add()([f_x, f2_x])
-
-        f_x = layers.Dropout(0.2)(f_x)
-        f_x = layers.Dense(TAG_NUM, activation='relu')(f_x)
-
-        tag_input = layers.Input(shape=(MAX_LENGTH, TAG_NUM), dtype='float32')
-        t_x = layers.Dense(units=TAG_NUM, activation='relu')(tag_input)
-
-        x = layers.Concatenate()([f_x, t_x])
-        x = layers.Dense(units=14, activation='relu')(x)
-        # x = layers.Reshape(target_shape=(1, 150, TAG_NUM * 2))(x)
-        # x = layers.Conv2D(filters=64, kernel_size=4, strides=1, padding='SAME', activation='relu', kernel_initializer='he_normal')(x)
-        # x = layers.Reshape(target_shape=(150, TAG_NUM))(x)
-
-        crf = CRF(dtype='float32')
-        x = crf(x)
-
-
-        base_model = Model(inputs=[feature_input, tag_input], outputs=x)
-        utils.plot_model(base_model, "biGRU+ResNet+Okt.png", True, True, 'TB', True, 120)
-
-        model = ModelWithCRFLoss(base_model)
-        model.compile(optimizer=optimizers.Adam(lr=0.0003))
-        return model
-
-    def train(self, x1, x2, y, save_name, epochs=20, batch_size=32):
+    def train(self, x1, x2, y, save_name, epochs=30, batch_size=20):
         self.model.fit(x=[x1, x2], y=y, epochs=epochs, batch_size=batch_size, verbose=1)
         self.model.save(filepath=save_name)
+
+    def load(self, location):
+        self.model.load_weights(location + "/variables")
 
     def evaluate(self, x1, x2, y, idx2tag):
         model_predicted = self.model.predict([x1, x2])
@@ -107,14 +81,18 @@ class Network:
 
 if __name__ == "__main__":
 
-    neural_net = Network()
+    neural_net = Network(2)
 
 
     data = Dataset()
     train_x1, train_x2, train_y = data.get_network_data("../baseline/ner_train.txt")
     test_x1, test_x2, test_y = data.get_network_data("../baseline/ner_dev.txt")
 
-    neural_net.train(train_x1, train_x2, train_y, "model2", 20)
+    neural_net.train(train_x1, train_x2, train_y, "network2", 30, 20)
+    # model1은 biGRU_ResNet_Okt에서 두개의 BiGRU를 합칠때 Add 사용
+    # model2는 Concatenate 사용
+    # network2는 models.network2 사용
+
     neural_net.evaluate(test_x1, test_x2, test_y, data.idx2tag)
 
 
