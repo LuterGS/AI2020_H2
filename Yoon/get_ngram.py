@@ -1,3 +1,6 @@
+from itertools import product
+from collections import OrderedDict
+
 def get_ngram(word, min=2, max=15):
     ngrams = []
 
@@ -19,3 +22,8 @@ def get_ngram(word, min=2, max=15):
     ngrams = list(OrderedDict.fromkeys(ngrams))
     ngrams.sort(key=len)
     return ngrams
+
+
+# 입력: "홍길동이다"
+# 출력: ['이다', '홍길', '동이', '길동', '홍길동', '동이다', '길동이', '홍길동이', '길동이다', '홍길동이다']
+# 출력의 순서는 매번 같습니다. 같은 ngram이 매번 같은 인덱스에 위치함
