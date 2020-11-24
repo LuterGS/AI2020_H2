@@ -107,7 +107,7 @@ def convert_data2tagfeature(sentence, max_length, embedding_dim):
     :return:
     """
 
-    result = [np.full(shape=embedding_dim, fill_value=0, dtype=np.float) for i in range(150)]
+    result = [np.full(shape=embedding_dim, fill_value=0, dtype=np.float) for i in range(max_length)]
     pos = TAG.pos(sentence)
     i = 0
 
@@ -134,12 +134,72 @@ def convert_data2tagfeature(sentence, max_length, embedding_dim):
         except IndexError:
             break
 
-    if len(result) != 150:
-        print(sentence)
+    if len(result) != max_length:
+        print("데이터 전처리가 잘못되었습니다! 프로그램을 종료합니다 :", sentence)
         exit(1)
 
     return np.asarray(result)
 
 
+def get_one_posdata(filepath, embedding=14, max_length=150):
+    """
+    :param filepath: 전처리 데이터를 얻을 파일 경로입니다. (상대경로시 이 함수를 호출하는 파일의 경로를 시작점으로 합니다)
+    :param embedding: biGRU 계층을 지난 결과값고 concat하기 때문에, 계층의 데이터를 균등하기 주기 위해 차원을 임의로 늘렸습니다.
+                        늘릴 차원의 개수입니다.
+    :param max_length: 문장의 최대 길이입니다. 기본값 150으로 설정되어 있으며, 값을 변경할 수 있습니다.
+
+    예시)
+    먼저, max_length가 20이라고 가정하면, 크기가 20인 빈 numpy array를 만듭니다.
+    이후, 나는 건국대 학생이다.  라는 12글자의 문장이 있다고 할 때, 해당 글자를 Okt를 이용해 pos를 추출합니다.
+    (나, noun), (는, josa), (건국대, noun), (학생, noun), (이다, josa), (. ,Punctuation) 으로 분리가 됩니다. (예시이며, 다르게 나올 수 있음)
+    noun을 1, josa를 2, punctuation을 3, space를 0이라고 하면, 해당 문장을 다음과 같은 벡터로 치환합니다.
+    나   는   <SP>    건   국   대   <SP>    학   생   이   다   .
+    1    2   0        1    1    1   0       1   1    2   2    3     0...
+    -> [12011101122300000000]       -> 벡터 1
+    이후, 차원을 늘려주기 위해, 각 값과 같은 크기를 가지는 embedding (기본 14)만큼의 numpy array를 채워넣습니다.
+    즉, 위 벡터에서 1은 [1 1 1 1 1 1 1 1 1 1 1 1 1 1] 로 변환됩니다.
+    따라서, 위 벡터는 이런 값으로 변환됩니다.
+    [[1111....
+     [2222....
+     [0000...
+     [1111...
+     [1111...
+     [1111...
+     [0000...
+     [1111...
+     [1111...
+     [2222...
+     [2222...
+     [3333...
+     [0000...
+     ...]       -> 벡터 2
+
+    :return: [문장 개수][max_length][embedding] 의 크기를 가지는 numpy array를 return 합니다.
+    """
+    result = []
+    with open(filepath, "r", encoding="utf8") as file:
+        for line in tqdm(file.readlines()):
+            line = line.split("\t")
+
+            if len(line) == 3:
+                raw_sentence = line[1]
+            else:
+                raw_sentence = line[0]
+
+            result.append(convert_data2tagfeature(raw_sentence.replace(" ", "").replace("<SP>", " "), max_length=max_length, embedding_dim=embedding))
+
+    return np.asarray(result)
+
+
+
+if __name__ == "__main__":
+
+    # np.save("ner_dev", get_one_posdata("../baseline/ner_dev.txt"))
+    # np.save("ner_train", get_one_posdata("../baseline/ner_train.txt"))
+
+    dev = np.load("ner_dev.npy")
+    print(dev.shape)
+    train = np.load("ner_train.npy")
+    print(train.shape)
 
 

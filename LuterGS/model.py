@@ -6,7 +6,6 @@ from tf2crf import CRF, ModelWithCRFLoss
 
 def biGRU_ResNet_Okt(MAX_LENGTH, EMBEDDING_DIM, TAG_NUM):
 
-
     feature_input = layers.Input(shape=(MAX_LENGTH, ), dtype='int32')
     f_x = layers.Embedding(input_dim=2160, output_dim=EMBEDDING_DIM, input_shape=(MAX_LENGTH, ), trainable=True, mask_zero=True)(feature_input)
     f_x = layers.Bidirectional(layers.GRU(100, return_sequences=True))(f_x)
@@ -34,6 +33,9 @@ def biGRU_ResNet_Okt(MAX_LENGTH, EMBEDDING_DIM, TAG_NUM):
 
     # f1-score : micro agv 0.68, macro avg 0.7, weighted avg 0.68
     # Adam, lr 0.0005, epoch 30, batch size 20
+
+    # f1-score : micro agv 0.64, macro avg 0.59, weighted avg 0.64
+    # Adam, lr 0.0005, epoch 100, batch size 20
 
 
 
@@ -67,7 +69,10 @@ def network2(MAX_LENGTH, EMBEDDING_DIM, TAG_NUM):
     model.compile(optimizer=optimizers.Adam(learning_rate=0.0005))
     return model
 
-    # f1-score : micro agv ___, macro avg ___, weighted avg ___
+    # f1-score : micro agv 0.56, macro avg 0.45, weighted avg 0.55
     # Adam, lr 0.0005, epoch 20, batch size 20
+
+    # f1-score : micro agv 0.67, macro avg 0.55, weighted avg 0.66
+    # Adam, lr 0.001, epoch 20, batch size 20
 
 
