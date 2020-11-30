@@ -28,7 +28,7 @@ def convert_sent2dict(sent, max_length):  # baseline load_data 함수에서의 s
         match_count = 0
         for i, char in enumerate(word):
             lookup += char  # 단어에서 음절을 하나씩 늘려감
-            if lookup in per_dict:
+            if lookup in per_dict:  # PER.txt를 load_dict에 넣어서 나온 값을 담은 
                 loc_tag, org_tag, per_tag = 0, 0, 0  # 기존 원핫을 초기화
                 per_tag = 1  
                 match_count = i + 1
